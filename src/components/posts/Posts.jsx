@@ -1,53 +1,40 @@
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchPosts } from "../../redux/postsSlice";
-import { Puff } from "react-loader-spinner";
+import { useSelector } from "react-redux";
+import Navbar from "../navbar/Navbar";
 
 function Posts() {
-  const dispatch = useDispatch();
   const posts = useSelector((state) => state.posts.entities.posts);
-  const status = useSelector((state) => state.posts.status);
-  const error = useSelector((state) => state.posts.error);
-
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    if (!loaded) {
-      dispatch(fetchPosts());
-      setLoaded(true);
-    }
-  }, [loaded, dispatch]);
-
-  if (status === "loading") {
-    return (
-      <div className="flex justify-center items-center my-72">
-        <Puff
-        visible={true}
-        height="80"
-        width="80"
-        color="#4fa94d"
-        ariaLabel="puff-loading"
-        wrapperStyle={{}}
-        wrapperClass=""
-      />
-      </div>
-    );
-  }
-
-  if (status === "error") {
-    return <div>Error: {error}</div>;
-  }
 
   let content = null;
   if (posts) {
-    content = posts.map((post) => <li key={post.id}>{post.title}</li>);
+    content = posts.map((post) => (
+      <li
+        key={post.id}
+        className="desktop:w-1/4 tablet:w-2/5 mobile:w-full border border-fuchsia-900 rounded-md">
+        <div className="p-5">
+          <h2 className="text-2xl font-bold pb-4">{post.title}</h2>
+          <p className="pb-3">{post.body}</p>
+          <div className="flex gap-5">
+            {post.tags.map((tag) => (
+              <button
+                key={tag}
+                className="border p-2 rounded border-fuchsia-950 font-light text-fuchsia-950 hover:text-white hover:bg-fuchsia-950">
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
+      </li>
+    ));
   }
 
   return (
-    <div>
-      <h1>posts</h1>
-      <ul>{content}</ul>
-    </div>
+    <>
+      <Navbar />
+      <div className="flex flex-col items-center">
+        <h1 className="py-5 font-semibold text-3xl">Posts</h1>
+        <ul className="flex flex-wrap gap-5 justify-center">{content}</ul>
+      </div>
+    </>
   );
 }
 

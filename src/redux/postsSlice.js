@@ -1,8 +1,4 @@
-import {
-  createAsyncThunk,
-  // createEntityAdapter,
-  createSlice,
-} from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
 axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
@@ -21,20 +17,56 @@ export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
   }
 });
 
-// const postsAdapter = createEntityAdapter({
-//   selectId: (instance) => instance.toString(),
-// });
+export const fetchSinglePost = createAsyncThunk(
+  "posts/fetchSinglePost",
+  async (postId) => {
+    try {
+      const response = await axios.get(`posts/${postId}`);
+      if (response.status === 200) {
+        return response.data;
+      }
+    } catch (error) {
+      console.error("Error fetching single post:", error);
+      throw error;
+    }
+  }
+);
 
-// const initialState = postsAdapter.getInitialState({
-//   status: "idle",
-//   error: null,
-// });
+export const fetchPostsFromSearch = createAsyncThunk(
+  "posts/fetchPostsFromSearch",
+  async (searchTerm) => {
+    const response = await axios.get(
+      `https://dummyjson.com/posts/search?q=${searchTerm}`
+    );
+    return response.data.posts;
+  }
+);
+
+export const fetchPostsByUserId = createAsyncThunk(
+  "posts/fetchPostsByUserId",
+  async (userId) => {
+    return await axios.get(`https://dummyjson.com/posts/user/${userId}`);
+  }
+);
+
+export const fetchPostsComments = createAsyncThunk(
+  "posts/fetchPostsComments",
+  async (postId) => {
+    return await axios.get(`https://dummyjson.com/posts/${postId}/comments`);
+  }
+);
+
+export const addNewPost = createAsyncThunk("posts/add", async (newData) => {
+  const response = await axios.post("https://dummyjson.com/posts/add", newData);
+  console.log(response.data);
+  return response.data
+});
 
 const initialState = {
-  status: 'idle' ,
+  status: "idle",
   error: null,
-  entities:{}
-}
+  entities: {},
+};
 
 const postsSlice = createSlice({
   name: "posts",
@@ -46,17 +78,20 @@ const postsSlice = createSlice({
         state.status = "loading";
       })
       .addCase(fetchPosts.fulfilled, (state, action) => {
-        // postsAdapter.upsertMany(state, action.payload);
-        state.entities = action.payload
+        state.entities = action.payload;
         state.status = "success";
       })
       .addCase(fetchPosts.rejected, (state, action) => {
         state.status = "error";
         state.error = action.error.message;
-      });
+      })
+      .addCase(addNewPost.fulfilled, (state, action) => {
+        state.entities.posts.push(action.payload);
+      })
+      .addCase(fetchPostsFromSearch.fulfilled, (state, action) => {});
   },
 });
 
 export default postsSlice.reducer;
 
-export const selectPosts = (state) => state.entities
+export const selectPosts = (state) => state.entities;
