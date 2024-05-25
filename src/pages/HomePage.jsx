@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   addNewPost,
   fetchPosts,
-  fetchPostsFromSearch,
+  fetchPostsBySearchTerm,
 } from "../redux/postsSlice";
 import { Puff } from "react-loader-spinner";
 import { CiSearch } from "react-icons/ci";
@@ -22,7 +22,9 @@ function HomePage() {
   const [body, setBody] = useState("");
   const [userId, setUserId] = useState("");
   const [search, setSearch] = useState("");
-  const [tags, setTags] = useState("");
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [searchStatus, setSearchStatus] = useState("idle");
+
 
   useLayoutEffect(() => {
     if (!isloaded) {
@@ -53,10 +55,6 @@ function HomePage() {
 
   const handleSearchTerm = (e) => {
     setSearch(e.target.value);
-    console.log(search);
-  };
-  const handleSearchSubmit = (searchTerm) => {
-    dispatch(fetchPostsFromSearch(searchTerm));
   };
 
   const handlePostSubmit = () => {
@@ -64,15 +62,42 @@ function HomePage() {
       title,
       body,
       userId: Number(userId),
-      tags: tags.split(",").map(tag => tag.trim()),
+      tags: selectedTags,
     };
     dispatch(addNewPost(newPost));
   };
 
-  const handleTag = (e)=>{
-    setTags(e.target.value)
-    console.log(tags);
-  }
+  const handleTag = (e) => {
+    const selectedTags = Array.from(
+      e.target.selectedOptions,
+      (option) => option.value
+    );
+    setSelectedTags(selectedTags);
+  };  
+
+  const handleSearchSubmit = async (searchTerm) => {
+    setSearchStatus("loading");
+    try {
+      await dispatch(fetchPostsBySearchTerm(searchTerm));
+      setSearchStatus("idle");
+    } catch (error) {
+      setSearchStatus("error");
+      console.error("Error fetching posts:", error);
+    }
+  };
+  
+
+  const uniqueTags =
+    posts?.reduce((acc, post) => {
+      if (post.tags) {
+        post.tags.forEach((tag) => {
+          if (!acc.includes(tag)) {
+            acc.push(tag);
+          }
+        });
+      }
+      return acc;
+    }, []) || [];
 
   const renderSearchModalContent = (handleClose) => (
     <div className="flex flex-col justify-center gap-5">
@@ -83,13 +108,13 @@ function HomePage() {
         type="text"
         placeholder="Search term"
         value={search}
-        onChange={(e) => handleSearchTerm(e)}
+        onChange={handleSearchTerm}
       />
       <div className="flex justify-center gap-40">
         <button
           className="bg-green-900 text-white px-4 py-2 rounded"
           type="submit"
-          onClick={handleSearchSubmit}>
+          onClick={() => handleSearchSubmit(search)}>
           Submit
         </button>
         <button
@@ -98,6 +123,20 @@ function HomePage() {
           Close
         </button>
       </div>
+      {searchStatus === "loading" && (
+      <Puff
+      visible={true}
+      height="80"
+      width="80"
+      color="#4fa94d"
+      ariaLabel="puff-loading"
+      wrapperStyle={{}}
+      wrapperClass=""
+    />
+    )}
+    {searchStatus === "error" && (
+      <div>Error: {error}</div>
+    )}
     </div>
   );
 
@@ -126,22 +165,31 @@ function HomePage() {
         value={body}
         onChange={(e) => setBody(e.target.value)}></textarea>
       <select
-       onChange={(e) => handleTag(e)}
-       value={tags}
-       className="p-2 border-b focus:outline-none  border-b-slate-400">
-        {posts
-          ? posts.map((post) =>
-              post.tags.map((tag) => (
-                <option
-                  value={tags}
-                  key={tag}
-                  >
-                  {tag}
-                </option>
-              ))
-            )
-          : ""}
+        multiple
+        onChange={handleTag}
+        value={selectedTags}
+        className="p-2 border-b focus:outline-none  border-b-slate-400">
+        {uniqueTags.map((tag) => (
+          <option value={tag} key={tag}>
+            {tag}
+          </option>
+        ))}
       </select>
+      <div className="flex flex-wrap gap-2 mt-2">
+        {selectedTags.map((tag) => (
+          <span
+            key={tag}
+            className="bg-gray-200 px-2 py-1 rounded-md flex items-center gap-2">
+            {tag}
+            <button
+              type="button"
+              onClick={() => setSelectedTags(selectedTags.filter((t) => t !== tag))}
+              className="text-red-500">
+              x
+            </button>
+          </span>
+        ))}
+      </div>
       <div className="flex justify-center gap-40">
         <button
           className="bg-green-900 text-white px-4 py-2 rounded"

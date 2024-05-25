@@ -32,8 +32,8 @@ export const fetchSinglePost = createAsyncThunk(
   }
 );
 
-export const fetchPostsFromSearch = createAsyncThunk(
-  "posts/fetchPostsFromSearch",
+export const fetchPostsBySearchTerm = createAsyncThunk(
+  "posts/fetchPostsBySearchTerm",
   async (searchTerm) => {
     const response = await axios.get(
       `https://dummyjson.com/posts/search?q=${searchTerm}`
@@ -58,7 +58,6 @@ export const fetchPostsComments = createAsyncThunk(
 
 export const addNewPost = createAsyncThunk("posts/add", async (newData) => {
   const response = await axios.post("https://dummyjson.com/posts/add", newData);
-  console.log(response.data);
   return response.data
 });
 
@@ -88,7 +87,17 @@ const postsSlice = createSlice({
       .addCase(addNewPost.fulfilled, (state, action) => {
         state.entities.posts.push(action.payload);
       })
-      .addCase(fetchPostsFromSearch.fulfilled, (state, action) => {});
+      .addCase(fetchPostsBySearchTerm.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchPostsBySearchTerm.fulfilled, (state, action) => {
+        state.entities.posts = action.payload
+        state.status = "success";
+      })
+      .addCase(fetchPostsBySearchTerm.rejected, (state, action) => {
+        state.status = "error";
+        state.error = action.error.message;
+      });
   },
 });
 
